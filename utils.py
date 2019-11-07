@@ -3,6 +3,7 @@ import torch.nn.functional as F
 from torch.utils.data.sampler import Sampler
 import numpy as np
 import itertools
+import csv
 
 import config
 
@@ -128,14 +129,65 @@ class AverageMeter(object):
         self.count += n
         self.avg = self.sum / self.count
 
-def mse_loss(out1, out2):
-    assert out1.size() == out2.size()
-    quad_diff = torch.sum((F.softmax(out1, dim=1) - F.softmax(out2, dim=1)) ** 2)
+class Logger(object):
+    def __init__(self, path, header):
+        self.log_file = open(path, 'w')
+        self.logger = csv.writer(self.log_file, delimiter='\t')
 
-    return quad_diff / out1.data.nelement()
+        self.logger.writerow(header)
+        self.header = header
+    def __del(self):
+        self.log_file.close()
+    def log(self, values):
+        write_values = []
+        for col in self.header:
+            assert col in self.header
+            write_values.append(values[col])
+        self.logger.writerow(write_values)
+        self.log_file.flush()
+
+def softmax_mse_loss(logits1, logits2):
+    assert logits1.size() == logits2.size()
+    softmax_1 = F.softmax(logits1, dim=1)
+    softmax_2 = F.softmax(logits2, dim=2)
+
+    return F.mse_loss(softmax_1, softmax_2, reduction='sum') / logits1.size()[1]
+
+def softmax_kl_loss(out1, out2):
+    assert out1.size() == out2.size()
+    input_log_softmax = F.log_softmax(out1, dim=1)
+    target_softmax = F.softmax(out2, dim=1)
+
+    return F.kl_div(input_log_softmax, target_softmax, reduction='sum')
 
 def update_ema_variable(model, ema_model, alpha, global_step):
     # Use the true average until the exponential average is more correct
     alpha = min(1-(1/(global_step+1)), alpha)
     for ema_param, param in zip(ema_model.parameters(), model.parameters()):
         ema_param.data.mul_(alpha).add_((1-alpha)*param.data)
+
+def get_current_consistency_weight(epoch, max_weight, rampup_length):
+    return max_weight * sigmoid_rampup(epoch, rampup_length)
+
+def sigmoid_rampup(epoch, rampup_length):
+    if rampup_length == 0:
+        return 1.0
+    else:
+        epoch = np.clip(epoch, 0.0, rampup_length)
+        phase = 1.0 - epoch / rampup_length
+        return float(np.exp(-5.0 * phase * phase))
+
+def accuracy(output, target, topk=(1,)):
+    """Computes the precision@k for the specified values of k"""
+    maxk = max(topk)
+    labeled_minibatch_size = max(target.ne(config.NO_LABEL).sum(), 1e-8)
+
+    _, pred = output.topk(maxk, 1, True, True)
+    pred = pred.t()
+    correct = pred.eq(target.view(1, -1).expand_as(pred))
+
+    res = []
+    for k in topk:
+        correct_k = correct[:k].view(-1).float().sum(0, keepdim=True)
+        res.append(correct_k.mul_(100.0 / labeled_minibatch_size))
+    return res

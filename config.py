@@ -5,6 +5,9 @@ NUM_LABELS = 100 # number of labeled images in whole dataset
 seed = 10
 ratio = 0.25 # ratio of labeled samples dedicated in a batch
 ema_decay = 0.999 # exponential moving average decay rate (default 0.999)
+consistency_type = 'mse' # can be one of 'mse' and 'kl'
+consistency_weight = 50 # weight of consistency cost (ramp up from 0 to this value)
+rampup_length = 50 # number of epochs of the rampup
 
 # ## for mnist
 # mean = (0.1307,)
