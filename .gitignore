@@ -1,6 +1,7 @@
-.idea/*
+.idea/workspace.xml
 .ipynb_checkpoints/
 __pycache__/
 results/
 
 *.ipynb
+*.onnx

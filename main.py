@@ -7,7 +7,8 @@ import json
 import opts
 from utils import *
 from train import train_epoch, validate_epoch
-from datasets import prepare_cifar10
+from dataset import prepare_cifar10
+from mean import get_mean, get_std
 
 
 def create_model(ema=False, num_classes=10):
@@ -27,6 +28,9 @@ def create_model(ema=False, num_classes=10):
 
     return model
 
+def create_3d_resnet(ema=False, num_classes=101):
+    
+
 
 if __name__ == '__main__':
     args = opts.parse_opts()
@@ -36,9 +40,18 @@ if __name__ == '__main__':
     #     print('{}: {}'.format(key, cfg[key]))
     # if not os.path.exists(os.path.join(args.result_path, 'config.py')):
     #     shutil.copyfile('./config.py', os.path.join(args.result_path, 'config.py'))
+    args.scales = [args.initial_scale]
+    for i in range(1, args.n_scales):
+        args.scales.append(args.scales[-1] * args.scales_step)
+    args.arch = 'resnet18'
+    args.mean = get_mean(1, dataset='activitynet')
+    args.std = get_std(args.norm_value)
+
     print(args)
     with open(os.path.join(args.result_path, 'args.json'), 'w') as args_file:
         json.dump(vars(args), args_file)
+
+    torch.manual_seed(args.manual_seed)
 
     # writer = SummaryWriter(log_dir='./results')
     train_batch_logger = Logger(os.path.join(args.result_path, args.pth_name + '_' + 'train_batch.log'),

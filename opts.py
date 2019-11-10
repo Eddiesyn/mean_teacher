@@ -2,6 +2,18 @@ import argparse
 
 def parse_opts():
     parser = argparse.ArgumentParser()
+    # begin for video application
+    parser.add_argument('--labeled_video_path', default='/data1/UCF-101_img', type=str, help='vids path of labeled dataset(ucf101)')
+    parser.add_argument('--labeled_annotation_path', default='/usr/home/sut/datasets/UCF/ucf101_01.json',
+                        type=str, help='annotation path of labeled dataset')
+    parser.add_argument('--unlabeled_video_path', default='/data1/kinetics-600', type=str, help='vids path of unlabeled dataset(kinetics)')
+    parser.add_argument('--unlabeled_annotation_path', default='/usr/home/sut/Efficient-3DCNNs/annotation_Kinetics/kinetics.json',
+                        type=str, help='annotation path of unlabeled dataset')
+    parser.add_argument('--initial_scale', default=1.0, type=float, help='Initial scale for multiscale cropping')
+    parser.add_argument('--n_scales', default=5, type=int, help='Number of scales for multiscale cropping')
+    parser.add_argument('--scale_step', default=0.84089641525, type=float, help='Scale step for multiscale cropping')
+    parser.add_argument('--manual_seed', default=1, type=int, help='Manually set random seed')
+    # end for video application
     parser.add_argument('--dataset_root', default='', type=str, help='Root directory path of data')
     parser.add_argument('--result_path', default='./results/', type=str, help='result path')
     parser.add_argument('--pth_name', default='cifar10_resnet18', type=str, help='chief name')

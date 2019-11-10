@@ -302,3 +302,10 @@ def linear_rampup(current, rampup_length):
         return 1.0
     else:
         return current / rampup_length
+
+
+def load_value_file(file_path):
+    with open(file_path, 'r') as input_file:
+        value = float(input_file.read().rstrip('\n\r'))
+
+    return value
